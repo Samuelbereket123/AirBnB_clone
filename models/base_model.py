@@ -4,8 +4,6 @@ import uuid
 from datetime import datetime
 import models
 
-time_format = "%Y-%m-%dT%H:%M:%S.%f"
-
 
 class BaseModel:
     """Represents the BaseModel for all other classes in the AirBnB clone."""
@@ -22,7 +20,7 @@ class BaseModel:
                 if key == "__class__":
                     continue
                 if key in ("created_at", "updated_at"):
-                    setattr(self, key, datetime.strptime(value, time_format))
+                    setattr(self, key, datetime.fromisoformat(value))
                 else:
                     setattr(self, key, value)
         else:
