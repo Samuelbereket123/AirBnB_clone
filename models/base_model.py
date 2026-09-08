@@ -3,15 +3,31 @@
 import uuid
 from datetime import datetime
 
+time_format = "%Y-%m-%dT%H:%M:%S.%f"
+
 
 class BaseModel:
     """Represents the BaseModel for all other classes in the AirBnB clone."""
 
-    def __init__(self):
-        """Initialize a new BaseModel instance."""
-        self.id = str(uuid.uuid4())
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+    def __init__(self, *args, **kwargs):
+        """Initialize a new BaseModel instance.
+
+        Args:
+            *args: Unused.
+            **kwargs: Key/value pairs of attributes.
+        """
+        if kwargs:
+            for key, value in kwargs.items():
+                if key == "__class__":
+                    continue
+                if key in ("created_at", "updated_at"):
+                    setattr(self, key, datetime.strptime(value, time_format))
+                else:
+                    setattr(self, key, value)
+        else:
+            self.id = str(uuid.uuid4())
+            self.created_at = datetime.now()
+            self.updated_at = datetime.now()
 
     def __str__(self):
         """Return the string representation of the BaseModel instance."""
