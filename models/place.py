@@ -1,9 +1,18 @@
 #!/usr/bin/python3
 """Module for Place class."""
 from os import getenv
-from sqlalchemy import Column, String, Integer, Float, ForeignKey
+from sqlalchemy import Column, String, Integer, Float, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from models.base_model import BaseModel, Base
+
+place_amenity = Table(
+    'place_amenity',
+    Base.metadata,
+    Column('place_id', String(60), ForeignKey('places.id'),
+           primary_key=True, nullable=False),
+    Column('amenity_id', String(60), ForeignKey('amenities.id'),
+           primary_key=True, nullable=False)
+)
 
 
 class Place(BaseModel, Base):
@@ -23,6 +32,9 @@ class Place(BaseModel, Base):
         longitude = Column(Float, nullable=True)
         reviews = relationship("Review", backref="place",
                                cascade="all, delete, delete-orphan")
+        amenities = relationship("Amenity", secondary=place_amenity,
+                                 back_populates="place_amenities",
+                                 viewonly=False)
     else:
         city_id = ""
         user_id = ""
@@ -38,7 +50,7 @@ class Place(BaseModel, Base):
 
         @property
         def reviews(self):
-            """Getter attribute reviews for FileStorage"""
+            """Getter attribute reviews for FileStorage."""
             import models
             from models.review import Review
             review_list = []
@@ -47,6 +59,41 @@ class Place(BaseModel, Base):
                     review_list.append(review)
             return review_list
 
+        @property
+        def amenities(self):
+            """Getter attribute amenities for FileStorage."""
+            import models
+            from models.amenity import Amenity
+
+            class AmenityList(list):
+                """List wrapper that updates amenity_ids on append."""
+
+                def __init__(al_self, place_inst, *args):
+                    super().__init__(*args)
+                    al_self.place_inst = place_inst
+
+                def append(al_self, obj):
+                    if isinstance(obj, Amenity):
+                        if obj.id not in al_self.place_inst.amenity_ids:
+                            al_self.place_inst.amenity_ids.append(obj.id)
+                        super().append(obj)
+
+            amenity_list = [
+                a for a in models.storage.all(Amenity).values()
+                if a.id in self.amenity_ids
+            ]
+            return AmenityList(self, amenity_list)
+
+        @amenities.setter
+        def amenities(self, obj):
+            """Setter attribute amenities for FileStorage."""
+            from models.amenity import Amenity
+            if isinstance(obj, Amenity):
+                if obj.id not in self.amenity_ids:
+                    self.amenity_ids.append(obj.id)
+
     def __init__(self, *args, **kwargs):
         """Initialize Place instance."""
         super().__init__(*args, **kwargs)
+        if "amenity_ids" not in kwargs:
+            self.amenity_ids = []
