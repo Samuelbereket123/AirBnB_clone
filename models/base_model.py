@@ -2,11 +2,19 @@
 """Defines the BaseModel class."""
 import uuid
 from datetime import datetime
+from sqlalchemy import Column, String, DateTime
+from sqlalchemy.ext.declarative import declarative_base
 import models
+
+Base = declarative_base()
 
 
 class BaseModel:
     """Represents the BaseModel for all other classes in the AirBnB clone."""
+
+    id = Column(String(60), primary_key=True, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow())
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow())
 
     def __init__(self, *args, **kwargs):
         """Initialize a new BaseModel instance.
@@ -15,6 +23,9 @@ class BaseModel:
             *args: Unused.
             **kwargs: Key/value pairs of attributes.
         """
+        self.id = str(uuid.uuid4())
+        self.created_at = datetime.utcnow()
+        self.updated_at = datetime.utcnow()
         if kwargs:
             for key, value in kwargs.items():
                 if key == "__class__":
@@ -22,25 +33,14 @@ class BaseModel:
                 if key in ("created_at", "updated_at"):
                     if isinstance(value, str):
                         try:
-                            setattr(self, key, datetime.fromisoformat(value))
-                        except (ValueError, TypeError):
                             setattr(self, key, datetime.strptime(
                                 value, "%Y-%m-%dT%H:%M:%S.%f"))
+                        except (ValueError, TypeError):
+                            setattr(self, key, datetime.fromisoformat(value))
                     else:
                         setattr(self, key, value)
                 else:
                     setattr(self, key, value)
-            if "id" not in kwargs:
-                self.id = str(uuid.uuid4())
-            if "created_at" not in kwargs:
-                self.created_at = datetime.now()
-            if "updated_at" not in kwargs:
-                self.updated_at = datetime.now()
-        else:
-            self.id = str(uuid.uuid4())
-            self.created_at = datetime.now()
-            self.updated_at = datetime.now()
-            models.storage.new(self)
 
     def __str__(self):
         """Return the string representation of the BaseModel instance."""
@@ -50,7 +50,7 @@ class BaseModel:
 
     def save(self):
         """Update updated_at with current datetime and save to storage."""
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.utcnow()
         models.storage.new(self)
         models.storage.save()
 
@@ -64,3 +64,7 @@ class BaseModel:
             obj_dict['updated_at'] = self.updated_at.isoformat()
         obj_dict.pop('_sa_instance_state', None)
         return obj_dict
+
+    def delete(self):
+        """Delete the current instance from the storage."""
+        models.storage.delete(self)
