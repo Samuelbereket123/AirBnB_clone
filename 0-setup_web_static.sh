@@ -29,8 +29,9 @@ ln -s /data/web_static/releases/test/ /data/web_static/current
 chown -R ubuntu:ubuntu /data/
 
 # Update Nginx configuration to serve /data/web_static/current/ to hbnb_static
-if ! grep -q "location /hbnb_static" /etc/nginx/sites-available/default; then
-    sed -i 's|server_name _;|server_name _;\n\n\tlocation /hbnb_static {\n\t\talias /data/web_static/current/;\n\t\tindex index.html index.htm;\n\t}|' /etc/nginx/sites-available/default
+sed -i 's|location /hbnb_static |location /hbnb_static/ |' /etc/nginx/sites-available/default
+if ! grep -q "location /hbnb_static/" /etc/nginx/sites-available/default; then
+    sed -i 's|server_name _;|server_name _;\n\n\tlocation /hbnb_static/ {\n\t\talias /data/web_static/current/;\n\t\tindex index.html index.htm;\n\t}|' /etc/nginx/sites-available/default
 fi
 
 # Restart Nginx
